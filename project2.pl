@@ -12,6 +12,77 @@ activityType(Type, Priority, Name) :-
     atom(Name),
     assertz(activityType(Type, Priority, Name)).
 
+% activityHours(Type, Hours, Name)
+activityHours(Type, HoursPerWeek, Name) :-
+    member(Type, [course, sleep, homework, fitness, cooking]),
+    float(HoursPerWeek),
+    HoursPerWeek >= 0,
+    HoursPerWeek =< 20,
+    (Name == 0 ; atom(Name)),
+    assertz(activityHours(Type, HoursPerWeek, Name)).
+
+:- dynamic activityHours/3.
+
+% Predicate for storing user's activity hours
+store_activity_hours :-
+    write('Enter your weekly activity hours.'), nl,
+    write('Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]].'), nl,
+    read(ActivityHours),
+    assert_activity_hours(ActivityHours),
+    nl,
+    write('Activity hours added successfully.'), nl.
+
+assert_activity_hours([]).
+assert_activity_hours([[Type, Hours]|Rest]) :-
+    member(Type, [course, sleep, homework, fitness, cooking]),
+    float(Hours),
+    Hours >= 0.0,
+    Hours =< 20.0,
+    assertz(activityHours(Type, Hours, 0)),
+    assert_activity_hours(Rest).
+assert_activity_hours([_|Rest]) :-
+    format('Invalid activity type or hours provided. Please try again.~n'),
+    assert_activity_hours(Rest).
+
+% Prompt user to input named activity hours
+% Each activity is a list of [Type, Name, Hours]
+% Checks that hours allocated to named activities does not exceed hours allocated to type
+store_named_activity_hours :-
+    write('Enter named activity hours.'), nl,
+    write('Example: [[course, math, 5], [homework, "math hw1", 1.5]]'), nl,
+    read(Activities),
+    assert_named_activity_hours(Activities),
+    nl,
+    write('Named activity hours added successfully.'), nl.
+
+assert_named_activity_hours([]).
+assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
+    activityType(Type, _, _),
+    activityHours(Type, AllocatedHours, 0),
+    % check that named activity hours don't exceed hours allocated to type
+    named_activity_hours(Type, NamedHours),
+    TotalHours is NamedHours + Hours,
+    TotalHours =< AllocatedHours,
+    assertz(activityHours(Type, AllocatedHours, Name)),
+    assert_named_activity_hours(Rest).
+assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
+    \+ activityType(Type, _, _),
+    format('Invalid activity type: ~w. Please try again.~n', [Type]),
+    assert_named_activity_hours(Rest).
+assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
+    activityType(Type, _, _),
+    activityHours(Type, AllocatedHours, 0),
+    named_activity_hours(Type, NamedHours),
+    TotalHours is NamedHours + Hours,
+    TotalHours > AllocatedHours,
+    format('Cannot add named activity ~w to ~w because it would exceed allocated hours.~n', [Name, Type]),
+    assert_named_activity_hours(Rest).
+
+% Retrieve the total number of hours for named activities of a specific type
+named_activity_hours(Type, TotalHours) :-
+    findall(Hours, (activityHours(Type, Hours, Name), Name \= 0), HoursList),
+    sum_list(HoursList, TotalHours).
+
 
 %% Time predicates
 
