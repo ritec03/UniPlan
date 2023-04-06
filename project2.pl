@@ -1,6 +1,17 @@
 % Define activity predicate with four arguments
 % course, week day, start time, end time
 :- dynamic activity/4.
+:- dynamic activityType/3.
+
+% activityType(Type, Priority, Name)
+activityType(Type, Priority, Name) :-
+    member(Type, [course, sleep, homework, fitness, cooking]),
+    integer(Priority),
+    Priority >= 0,
+    Priority =< 5,
+    atom(Name),
+    assertz(activityType(Type, Priority, Name)).
+
 
 %% Time predicates
 
@@ -42,26 +53,27 @@ duration(time(StartHour, StartMinute), time(EndHour, EndMinute), Duration) :-
 % Predicate for storing user's course schedule
 store_course_schedule :-
     write('Enter your course schedule for each day of the week.'), nl,
-    write('Example: [activity(cse101, monday, time(10,00), time(12,00)), activity(math201, tuesday, time(13,00), time(15,00))].'), nl,
+    write('Example: [[cse101, monday, time(10,00), time(12,00)], [math201, tuesday, time(13,00), time(15,00)]].'), nl,
     read(Schedule),
     assert_course_schedule(Schedule),
     nl,
     write('Course schedule added successfully.'), nl.
 
 assert_course_schedule([]).
-assert_course_schedule([activity(Course, Day, StartTime, EndTime)|Rest]) :-
+assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
     time(StartTime),
     time(EndTime),
     member(Day, [monday, tuesday, wednesday, thursday, friday, saturday, sunday]),
     \+ overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
-    assertz(activity(Course, Day, StartTime, EndTime)),
+    later(EndTime, StartTime),
+    assertz(activity(activityType(course, 0, Course), Day, StartTime, EndTime)),
     assert_course_schedule(Rest).
-assert_course_schedule([activity(Course, Day, StartTime, EndTime)|Rest]) :-
+assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
     overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
     format('Cannot add activity ~w on ~w from ~w to ~w as it overlaps with the following activities:~n', [Course, Day, StartTime, EndTime]),
     print_overlapping_activities(Course, Day, StartTime, EndTime),
     assert_course_schedule(Rest).
-assert_course_schedule([activity(_, _, _, _)|Rest]) :-
+assert_course_schedule([[_, _, _, _]|Rest]) :-
     assert_course_schedule(Rest).
 
 overlaps_with_existing_activity(_, Day, StartTime, EndTime) :-
@@ -114,7 +126,7 @@ print_schedule_by_day([Day|Rest]) :-
     print_schedule_by_day(Rest).
 
 print_activities_for_day(Day) :-
-    activity(Course, Day, StartTime, EndTime),
+    activity(activityType(_, _, Course), Day, StartTime, EndTime),
     duration(StartTime, EndTime, Duration),
     format('\t~w from ~w to ~w (~d minutes)~n', [Course, StartTime, EndTime, Duration]),
     fail.
