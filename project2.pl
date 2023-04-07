@@ -172,6 +172,10 @@ print_activities_for_day(Day) :-
     fail.
 print_activities_for_day(_).
 
+% add predicate to prohibit establishing sleep schedule the second time
+store_sleep_schedule :-
+    activity(activityType(sleep, _, _), _, _, _),
+    write('You cannot add sleeping schedule again, as you already added it.').
 % Predicate for storing user's course schedule
 store_sleep_schedule :-
     write('Enter how many hours a day would you like to sleep.'), nl,
