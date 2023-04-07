@@ -1,9 +1,38 @@
 :- use_module('time.pl').
+% :- use_module('course_schedule.pl').
 
 % Define activity predicate with four arguments
 % course, week day, start time, end time
 :- dynamic activity/4.
 :- dynamic activityType/3.
+
+% TODO make sure to bring a message if a duplicate is found.
+% Predicate for storing user's course schedule
+store_course_schedule :-
+    write('Enter your course schedule for each day of the week.'), nl,
+    write('Example: [[cse101, monday, time(10,00), time(12,00)], [math201, tuesday, time(13,00), time(15,00)]].'), nl,
+    read(Schedule),
+    assert_course_schedule(Schedule),
+    nl,
+    write('Course schedule added successfully.'), nl.
+
+
+assert_course_schedule([]).
+assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
+    time(StartTime),
+    time(EndTime),
+    member(Day, [monday, tuesday, wednesday, thursday, friday, saturday, sunday]),
+    \+ overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
+    later(EndTime, StartTime),
+    assertz(activity(activityType(course, 0, Course), Day, StartTime, EndTime)),
+    assert_course_schedule(Rest).
+assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
+    overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
+    format('Cannot add activity ~w on ~w from ~w to ~w as it overlaps with the following activities:~n', [Course, Day, StartTime, EndTime]),
+    print_overlapping_activities(Course, Day, StartTime, EndTime),
+    assert_course_schedule(Rest).
+assert_course_schedule([[_, _, _, _]|Rest]) :-
+    assert_course_schedule(Rest).
 
 % activityType(Type, Priority, Name)
 activityType(Type, Priority, Name) :-
@@ -87,33 +116,6 @@ named_activity_hours(Type, TotalHours) :-
     sum_list(HoursList, TotalHours).
 %% Schedule predicates
 
-% TODO make sure to bring a message if a duplicate is found.
-% Predicate for storing user's course schedule
-store_course_schedule :-
-    write('Enter your course schedule for each day of the week.'), nl,
-    write('Example: [[cse101, monday, time(10,00), time(12,00)], [math201, tuesday, time(13,00), time(15,00)]].'), nl,
-    read(Schedule),
-    assert_course_schedule(Schedule),
-    nl,
-    write('Course schedule added successfully.'), nl.
-
-assert_course_schedule([]).
-assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
-    time(StartTime),
-    time(EndTime),
-    member(Day, [monday, tuesday, wednesday, thursday, friday, saturday, sunday]),
-    \+ overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
-    later(EndTime, StartTime),
-    assertz(activity(activityType(course, 0, Course), Day, StartTime, EndTime)),
-    assert_course_schedule(Rest).
-assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
-    overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
-    format('Cannot add activity ~w on ~w from ~w to ~w as it overlaps with the following activities:~n', [Course, Day, StartTime, EndTime]),
-    print_overlapping_activities(Course, Day, StartTime, EndTime),
-    assert_course_schedule(Rest).
-assert_course_schedule([[_, _, _, _]|Rest]) :-
-    assert_course_schedule(Rest).
-
 overlaps_with_existing_activity(_, Day, StartTime, EndTime) :-
     activity(_, Day, OtherStartTime, OtherEndTime),
     (
@@ -170,10 +172,15 @@ print_activities_for_day(Day) :-
     fail.
 print_activities_for_day(_).
 
-
-%% scheduling code
-
-
+% Predicate for storing user's course schedule
+store_sleep_schedule :-
+    write('Enter how many hours a day would you like to sleep.'), nl,
+    read(AllocatedHours),
+    write('Enter at what time would you like to go to bed. Example: time(22,30).'), nl,
+    read(Bedtime),
+    schedule_sleep(AllocatedHours, Bedtime),
+    nl,
+    write('Course schedule added successfully.'), nl.
 
 % Predicate to schedule sleep
 % schedule sleep based on allocated hours and bedtime
@@ -186,7 +193,10 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     later(Bedtime, time(0,0)),
     earlier(Bedtime, time(7,0)),
     add_duration_to_time(Bedtime, AllocatedHours, Endtime),
-    assertz(activity(activityType(sleep, 0, sleep), wednesday, Bedtime, Endtime)).
+    foreach(
+        day(Day),
+        assertz(activity(activityType(sleep, 0, sleep), Day, Bedtime, Endtime))
+    ).
 
 schedule_sleep(AllocatedHours, Bedtime) :-
     % if the bedtime is before midnight but the sleep fits, assign it
@@ -197,7 +207,10 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     % if the duration is less, assign sleep
     Duration > AllocatedHours * 60,
     add_duration_to_time(Bedtime, AllocatedHours, Endtime),
-    assertz(activity(activityType(sleep, 0, sleep), thursday, Bedtime, Endtime)).
+    foreach(
+        day(Day),
+        assertz(activity(activityType(sleep, 0, sleep), Day, Bedtime, Endtime))
+    ).
 
 schedule_sleep(AllocatedHours, Bedtime) :-
     % if the bedtime is before midnight but the sleep fits, assign it
@@ -211,5 +224,10 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     Leftover is (AllocatedMinutes - Duration),
     minutes_to_hours(Leftover, Leftoverhours),
     add_duration_to_time(time(0,0), Leftoverhours, Endtime),
-    assertz(activity(activityType(sleep, 0, sleep), friday, Bedtime, time(23,59))),
-    assertz(activity(activityType(sleep, 0, sleep), saturday, time(0,0), Endtime)).
+    foreach(
+        (day(Day), next_day(Day, NextDay)),
+        (
+            assertz(activity(activityType(sleep, 0, sleep), Day, Bedtime, time(23,59))),
+            assertz(activity(activityType(sleep, 0, sleep), NextDay, time(0,0), Endtime))
+        )
+    ).

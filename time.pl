@@ -8,7 +8,9 @@
     duration/3,
     add_duration_to_time/3,
     hours_to_minutes/2,
-    minutes_to_hours/2
+    minutes_to_hours/2,
+    day/1,
+    next_day/2
 ]).
 
 % Define time predicate with two arguments
@@ -56,3 +58,21 @@ hours_to_minutes(Hours, Minutes) :-
 
 minutes_to_hours(Minutes, Hours) :-
     Hours is (Minutes / 60).
+
+% Define days of the week
+day(monday).
+day(tuesday).
+day(wednesday).
+day(thursday).
+day(friday).
+day(saturday).
+day(sunday).
+
+% Define predicate for next day
+next_day(monday, tuesday).
+next_day(tuesday, wednesday).
+next_day(wednesday, thursday).
+next_day(thursday, friday).
+next_day(friday, saturday).
+next_day(saturday, sunday).
+next_day(sunday, monday).
