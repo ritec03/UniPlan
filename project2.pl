@@ -63,12 +63,27 @@ store_activity_hours :-
     nl,
     write('Activity hours added successfully.'), nl.
 
+% the predicate is going to assign weekly hours to specific activity types
+% for example, homework, fitness, cooking.
+% if hours are assigned to the same activity type, then the hours are
+% overwritten
 assert_activity_hours([]).
 assert_activity_hours([[Type, Hours]|Rest]) :-
-    member(Type, [course, sleep, homework, fitness, cooking]),
+    member(Type, [homework, fitness, cooking]),
     float(Hours),
     Hours >= 0.0,
     Hours =< 20.0,
+    % remove previously allocated hours if exist
+    (   activityHours(Type, _, _) ->
+        retract(activityHours(Type, _, _))
+    ;   true
+    ),
+    % add activity type if does not exist
+    (
+        (\+ activityType(Type, _, 0),
+        activityType(Type, 0, 0));
+        true
+    ),
     assertz(activityHours(Type, Hours, 0)),
     assert_activity_hours(Rest).
 assert_activity_hours([_|Rest]) :-
@@ -94,7 +109,7 @@ assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     named_activity_hours(Type, NamedHours),
     TotalHours is NamedHours + Hours,
     TotalHours =< AllocatedHours,
-    assertz(activityHours(Type, AllocatedHours, Name)),
+    assertz(activityHours(Type, Hours, Name)),
     assertz(activityType(Type, 0, Name)),
     assert_named_activity_hours(Rest).
 assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
@@ -115,6 +130,24 @@ named_activity_hours(Type, TotalHours) :-
     findall(Hours, (activityHours(Type, Hours, Name), Name \= 0), HoursList),
     sum_list(HoursList, TotalHours).
 %% Schedule predicates
+
+% TODO
+% Here we want to go through all the activities, and schedule the allocated time.
+% we only allocate activities that are named (their name is not 0).
+% for each activity, one can schedule them or skip
+% to schedule each activity, ask what days of the week to allocate them to
+% then ask the starting time and activity duration.
+% then if total weekly scheduled time exceeds the allocated time
+% or if overlaps with existing activities are detected, reject
+% if success, subtract time from the activity
+% in the end, provide the schedule and the leftover times for activities.
+
+schedule_activities :-
+    % go through all the activities
+    foreach(
+        (activityHours(Type, Hours, AName), AName \= 0 ),
+        (format('The activity is ~w, of type ~w.~n', [AName, Type]))
+    ).
 
 overlaps_with_existing_activity(_, Day, StartTime, EndTime) :-
     activity(_, Day, OtherStartTime, OtherEndTime),
