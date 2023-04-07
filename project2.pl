@@ -1,3 +1,5 @@
+:- use_module('time.pl').
+
 % Define activity predicate with four arguments
 % course, week day, start time, end time
 :- dynamic activity/4.
@@ -59,11 +61,12 @@ assert_named_activity_hours([]).
 assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     activityType(Type, _, _),
     activityHours(Type, AllocatedHours, 0),
-    % check that named activity hours don't exceed hours allocated to type
+    % check that named activity hours don't exceed hours allocaTted to type
     named_activity_hours(Type, NamedHours),
     TotalHours is NamedHours + Hours,
     TotalHours =< AllocatedHours,
     assertz(activityHours(Type, AllocatedHours, Name)),
+    assertz(activityType(Type, 0, Name)),
     assert_named_activity_hours(Rest).
 assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     \+ activityType(Type, _, _),
@@ -82,42 +85,6 @@ assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
 named_activity_hours(Type, TotalHours) :-
     findall(Hours, (activityHours(Type, Hours, Name), Name \= 0), HoursList),
     sum_list(HoursList, TotalHours).
-
-
-%% Time predicates
-
-% Define time predicate with two arguments
-% hour, minute
-time(Hour, Minute) :-
-    integer(Hour),
-    integer(Minute),
-    Hour >= 0,
-    Hour < 24,
-    Minute >= 0,
-    Minute < 60.
-
-% Check if time1 is earlier than time2
-earlier(time(Hour1, Minute1), time(Hour2, Minute2)) :-
-    Hour1 < Hour2;
-    Hour1 =:= Hour2, Minute1 < Minute2.
-
-% Check if time1 is later than time2
-later(time(Hour1, Minute1), time(Hour2, Minute2)) :-
-    Hour1 > Hour2;
-    Hour1 =:= Hour2, Minute1 > Minute2.
-
-sameTime(time(Hour1, Minute1), time(Hour2, Minute2)) :-
-    Hour1 =:= Hour2, Minute1 =:= Minute2.
-
-notSame(time(Hour1, Minute1), time(Hour2, Minute2)) :-
-    Hour1 \= Hour2; Minute1 \= Minute2.
-
-% Define duration predicate with three arguments
-% start time, end time, duration
-duration(time(StartHour, StartMinute), time(EndHour, EndMinute), Duration) :-
-    StartHour =< EndHour,
-    Duration is (EndHour - StartHour) * 60 + (EndMinute - StartMinute).
-
 %% Schedule predicates
 
 % TODO make sure to bring a message if a duplicate is found.
@@ -202,3 +169,47 @@ print_activities_for_day(Day) :-
     format('\t~w from ~w to ~w (~d minutes)~n', [Course, StartTime, EndTime, Duration]),
     fail.
 print_activities_for_day(_).
+
+
+%% scheduling code
+
+
+
+% Predicate to schedule sleep
+% schedule sleep based on allocated hours and bedtime
+% Schedule the sleep activity based on allocated hours and bedtime
+% TODO request bedtime - should be between 8 and 3 am
+% TODO request sleep duraiton - should be between 4 and 10.
+
+schedule_sleep(AllocatedHours, Bedtime) :-
+    % if the bedtime is after midnight, just schedule sleep
+    later(Bedtime, time(0,0)),
+    earlier(Bedtime, time(7,0)),
+    add_duration_to_time(Bedtime, AllocatedHours, Endtime),
+    assertz(activity(activityType(sleep, 0, sleep), wednesday, Bedtime, Endtime)).
+
+schedule_sleep(AllocatedHours, Bedtime) :-
+    % if the bedtime is before midnight but the sleep fits, assign it
+    (earlier(Bedtime, time(23,59)); sameTime(Bedtime, time(23,59))),
+    (later(Bedtime, time(20,00)); sameTime(Bedtime, time(20,00))),
+    % calculate amount of sleep before midnight
+    duration(Bedtime, time(23,59), Duration),
+    % if the duration is less, assign sleep
+    Duration > AllocatedHours * 60,
+    add_duration_to_time(Bedtime, AllocatedHours, Endtime),
+    assertz(activity(activityType(sleep, 0, sleep), thursday, Bedtime, Endtime)).
+
+schedule_sleep(AllocatedHours, Bedtime) :-
+    % if the bedtime is before midnight but the sleep fits, assign it
+    (earlier(Bedtime, time(23,59)); sameTime(Bedtime, time(23,59))),
+    (later(Bedtime, time(20,00)); sameTime(Bedtime, time(20,00))),
+    % calculate amount of sleep before midnight
+    duration(Bedtime, time(23,59), Duration),
+    % if the duration is less, assign sleep
+    Duration =< AllocatedHours * 60,
+    hours_to_minutes(AllocatedHours, AllocatedMinutes),
+    Leftover is (AllocatedMinutes - Duration),
+    minutes_to_hours(Leftover, Leftoverhours),
+    add_duration_to_time(time(0,0), Leftoverhours, Endtime),
+    assertz(activity(activityType(sleep, 0, sleep), friday, Bedtime, time(23,59))),
+    assertz(activity(activityType(sleep, 0, sleep), saturday, time(0,0), Endtime)).
