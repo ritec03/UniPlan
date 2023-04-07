@@ -80,8 +80,10 @@ assert_activity_hours([[Type, Hours]|Rest]) :-
     ),
     % add activity type if does not exist
     (
-        (\+ activityType(Type, _, 0),
-        activityType(Type, 0, 0));
+        (
+            \+ activityType(Type, _, 0),
+            assertz(activityType(Type, 0, 0))
+        );
         true
     ),
     assertz(activityHours(Type, Hours, 0)),
@@ -131,11 +133,11 @@ named_activity_hours(Type, TotalHours) :-
     sum_list(HoursList, TotalHours).
 %% Schedule predicates
 
-% TODO
 % Here we want to go through all the activities, and schedule the allocated time.
 % we only allocate activities that are named (their name is not 0).
 % for each activity, one can schedule them or skip
 % to schedule each activity, ask what days of the week to allocate them to
+% TODO
 % then ask the starting time and activity duration.
 % then if total weekly scheduled time exceeds the allocated time
 % or if overlaps with existing activities are detected, reject
@@ -144,9 +146,41 @@ named_activity_hours(Type, TotalHours) :-
 
 schedule_activities :-
     % go through all the activities
-    foreach(
+    forall(
         (activityHours(Type, Hours, AName), AName \= 0 ),
-        (format('The activity is ~w, of type ~w.~n', [AName, Type]))
+        (
+            format('The activity is ~w, of type ~w.~n', [AName, Type]),
+            % ask the user whether to schedule them or not
+            read_schedule_activity(Schedule),
+            (Schedule \= []
+            ->
+                format('Scheduling activity for days: ~w.~n', [Schedule])
+            ;
+                format('Skipping activity.~n')
+            )
+        )
+    ).
+
+
+read_schedule_activity(Schedule) :-
+    write('Do you want to schedule this activity? (y/n) '),
+    read(Answer),
+    (Answer = y ->
+        (
+            write('Enter comma-separated list of days to schedule activity on: '),
+            read(DayList),
+            % validate the DayList
+            (
+                (is_list(DayList), foreach(member(Day, DayList), day(Day)))
+                -> 
+                Schedule = DayList % assign DayList to Schedule if it is a valid list
+                ;
+                format('Invalid input.~n'),
+                Schedule = [] % assign an empty list to Schedule if the answer is 'no'
+            )
+        )
+        ;
+        Schedule = []
     ).
 
 overlaps_with_existing_activity(_, Day, StartTime, EndTime) :-
