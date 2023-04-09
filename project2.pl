@@ -154,13 +154,29 @@ schedule_activities :-
             read_schedule_activity(Schedule),
             (Schedule \= []
             ->
-                format('Scheduling activity for days: ~w.~n', [Schedule])
+                format('Scheduling activity for days: ~w.~n', [Schedule]),
+                forall(member(Day, Schedule),
+                    (
+                        % Read starting time and duration
+                        read_start_time_and_duration(Start, Duration),
+                        minutes_to_hours(Duration, DurationHours),
+                        add_duration_to_time(Start, DurationHours, EndTime),
+                        % Check for overlaps
+                        (
+                            \+ overlaps_with_existing_activity(AName, Day, Start, EndTime)
+                            ->
+                                % Add activity to the schedule
+                                assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime))
+                            ;
+                                format('Overlap detected. Skipping activity on ~w.~n', [Day])
+                        )
+                    )
+                )
             ;
                 format('Skipping activity.~n')
             )
         )
     ).
-
 
 read_schedule_activity(Schedule) :-
     write('Do you want to schedule this activity? (y/n) '),
@@ -182,6 +198,13 @@ read_schedule_activity(Schedule) :-
         ;
         Schedule = []
     ).
+
+% gets Start as time(H,M) and Duration in minutes for the activity
+read_start_time_and_duration(Start, Duration) :-
+    write('Enter the starting time (HH:MM): '),
+    read(Start),
+    write('Enter the duration (in minutes): '),
+    read(Duration).
 
 overlaps_with_existing_activity(_, Day, StartTime, EndTime) :-
     activity(_, Day, OtherStartTime, OtherEndTime),
