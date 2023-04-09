@@ -5,6 +5,8 @@
 % course, week day, start time, end time
 :- dynamic activity/4.
 :- dynamic activityType/3.
+:- dynamic activityHoursTemp/3.
+:- dynamic activityFull/2.
 
 % TODO make sure to bring a message if a duplicate is found.
 % Predicate for storing user's course schedule
@@ -144,6 +146,10 @@ named_activity_hours(Type, TotalHours) :-
 % if success, subtract time from the activity
 % in the end, provide the schedule and the leftover times for activities.
 
+% Now, when we allocate an activity, we want add temporary fact of the leftover time for this activity
+% if the value of time gets below 0, then give an error of not sufficient allocated time.
+% if the schedule_activities finishes, remove the temporary facts and update the allocated hours.
+
 schedule_activities :-
     % go through all the activities
     forall(
@@ -155,8 +161,9 @@ schedule_activities :-
             (Schedule \= []
             ->
                 format('Scheduling activity for days: ~w.~n', [Schedule]),
-                forall(member(Day, Schedule),
+                forall((member(Day, Schedule), \+ activityFull(Type, AName)),
                     (
+                        format('Scheduling ~w for ~w`.~n', [AName, Day]),
                         % Read starting time and duration
                         read_start_time_and_duration(Start, Duration),
                         minutes_to_hours(Duration, DurationHours),
@@ -166,7 +173,7 @@ schedule_activities :-
                             \+ overlaps_with_existing_activity(AName, Day, Start, EndTime)
                             ->
                                 % Add activity to the schedule
-                                assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime))
+                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours)
                             ;
                                 format('Overlap detected. Skipping activity on ~w.~n', [Day])
                         )
@@ -205,6 +212,40 @@ read_start_time_and_duration(Start, Duration) :-
     read(Start),
     write('Enter the duration (in minutes): '),
     read(Duration).
+
+add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
+    assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime)),
+    % add temporary fact - find if those exist, or find activityHours
+    activityHoursTemp(Type, Hours, AName) ->
+        (
+            HoursLeft is Hours - DurationHours,
+            HoursLeft >= 0 ->
+            retract(activityHoursTemp(Type, Hours, AName)),
+            assertz(activityHoursTemp(Type, HoursLeft, AName)),
+            (
+                HoursLeft = 0 ->
+                assertz(activityFull(Type, AName))
+            )
+            ;
+            format('Cannot schedule this activity as there is not enough allocated horus.'),
+            % add temporary fact so that activity of this Name does not appear
+            assertz(activityFull(Type, AName))
+        )
+        ;
+        (
+            activityHours(Type, Hours, AName),
+            HoursLeft is Hours - DurationHours,
+            HoursLeft >= 0 ->
+            assertz(activityHoursTemp(Type, HoursLeft, AName)),
+            (
+                HoursLeft = 0 ->
+                assertz(activityFull(Type, AName))
+            )
+            ;
+            format('Cannot schedule this activity as there is not enough allocated horus.'),
+            assertz(activityFull(Type, AName))
+        ).
+    
 
 overlaps_with_existing_activity(_, Day, StartTime, EndTime) :-
     activity(_, Day, OtherStartTime, OtherEndTime),
