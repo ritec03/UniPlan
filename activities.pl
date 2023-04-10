@@ -5,6 +5,9 @@
     store_named_activity_hours/0
 ]).
 
+:- use_module('time.pl').
+:- use_module('project2.pl').
+
 :- dynamic activityType/3.
 
 % activityType(Type, Priority, Name)
