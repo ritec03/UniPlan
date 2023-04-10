@@ -1,5 +1,5 @@
 :- module(main, [
-    overlaps_with_exipsting_activity/4,
+    overlaps_with_existing_activity/4,
     print_overlapping_activities/4,
     activity/4
 ]).
@@ -49,8 +49,8 @@ schedule_activities :-
                         format('Scheduling ~w for ~w`.~n', [AName, Day]),
                         % Read starting time and duration
                         read_start_time_and_duration(Start, Duration),
-                        minutes_to_hours(Duration, DurationHours),
-                        add_duration_to_time(Start, DurationHours, EndTime),
+                        add_minutes_to_time(Start, Duration, EndTime),
+                        % TODO add a clause to prohibit crossing day
                         % Check for overlaps
                         (
                             \+ overlaps_with_existing_activity(AName, Day, Start, EndTime)
@@ -119,7 +119,7 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
                     retract(activityHoursTemp(Type, Hours, AName)),
                     assertz(activityHoursTemp(Type, HoursLeft, AName)),
                     (
-                        HoursLeft = 0 ->
+                        HoursLeft =< 0.01 ->
                         assertz(activityFull(Type, AName))
                         ;
                         true
@@ -139,7 +139,7 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
                 (
                     assertz(activityHoursTemp(Type, HoursLeft, AName)),
                     (
-                        HoursLeft = 0 ->
+                        HoursLeft =< 0.01 ->
                         assertz(activityFull(Type, AName))
                         ;
                         true

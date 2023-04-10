@@ -6,7 +6,7 @@
     sameTime/2,
     notSame/2,
     duration/3,
-    add_duration_to_time/3,
+    add_minutes_to_time/3,
     hours_to_minutes/2,
     minutes_to_hours/2,
     day/1,
@@ -40,15 +40,14 @@ notSame(time(Hour1, Minute1), time(Hour2, Minute2)) :-
     Hour1 \= Hour2; Minute1 \= Minute2.
 
 % Define duration predicate with three arguments
-% start time, end time, duration
+% start time, end time, duration whic his in minutes
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), Duration) :-
     StartHour =< EndHour,
     Duration is (EndHour - StartHour) * 60 + (EndMinute - StartMinute).
 
 % ONLY for durations that do not spill into the next day, TimeToAdd is in hours
-add_duration_to_time(time(Hours, Minutes), TimeToAdd, ResultTime) :-
-    hours_to_minutes(TimeToAdd, Duration),
-    TotalMinutes is Hours*60 + Minutes + Duration,
+add_minutes_to_time(time(Hours, Minutes), MinutesToAdd, ResultTime) :-
+    TotalMinutes is Hours*60 + Minutes + MinutesToAdd,
     NewHours is TotalMinutes // 60,
     NewMinutes is TotalMinutes mod 60,
     ResultTime = time(NewHours, NewMinutes).

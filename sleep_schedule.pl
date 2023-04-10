@@ -26,10 +26,15 @@ store_sleep_schedule :-
 % TODO request sleep duraiton - should be between 4 and 10.
 
 schedule_sleep(AllocatedHours, Bedtime) :-
+    AllocatedHours > 12 -> 
+    format('Maximum allocated time for sleep is 12 h. Please, try again.').
+
+schedule_sleep(AllocatedHours, Bedtime) :-
     % if the bedtime is after midnight, just schedule sleep
     later(Bedtime, time(0,0)),
     earlier(Bedtime, time(7,0)),
-    add_duration_to_time(Bedtime, AllocatedHours, Endtime),
+    hours_to_minutes(AllocatedHours, AllocatedMinutes),
+    add_minutes_to_time(Bedtime, AllocatedMinutes, Endtime),
     foreach(
         day(Day),
         main:assertz(activity(activityType(sleep, 0, sleep), Day, Bedtime, Endtime))
@@ -42,8 +47,9 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     % calculate amount of sleep before midnight
     duration(Bedtime, time(23,59), Duration),
     % if the duration is less, assign sleep
-    Duration > AllocatedHours * 60,
-    add_duration_to_time(Bedtime, AllocatedHours, Endtime),
+    hours_to_minutes(AllocatedHours, AllocatedMinutes),
+    Duration > AllocatedMinutes,
+    add_minutes_to_time(Bedtime, AllocatedMinutes, Endtime),
     foreach(
         day(Day),
         main:assertz(activity(activityType(sleep, 0, sleep), Day, Bedtime, Endtime))
@@ -58,9 +64,8 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     % if the duration is less, assign sleep
     Duration =< AllocatedHours * 60,
     hours_to_minutes(AllocatedHours, AllocatedMinutes),
-    Leftover is (AllocatedMinutes - Duration),
-    minutes_to_hours(Leftover, Leftoverhours),
-    add_duration_to_time(time(0,0), Leftoverhours, Endtime),
+    LeftoverMinutes is (AllocatedMinutes - Duration),
+    add_minutes_to_time(time(0,0), LeftoverMinutes, Endtime),
     foreach(
         (day(Day), next_day(Day, NextDay)),
         (
