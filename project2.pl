@@ -47,18 +47,15 @@ schedule_activities :-
                         format('Scheduling ~w for ~w`.~n', [AName, Day]),
                         % Read starting time and duration
                         read_start_time_and_duration(Start, Duration),
-                        write('Finished reading duration and start time.'),
                         minutes_to_hours(Duration, DurationHours),
                         add_duration_to_time(Start, DurationHours, EndTime),
-                        write('Finished calculating duration and times.'),
                         % Check for overlaps
                         (
                             \+ overlaps_with_existing_activity(AName, Day, Start, EndTime)
                             ->
                                 % Add activity to the schedule
-                                write('The activity does not overlap with anythin.'),
-                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours),
-                                write('After adding stuff to schedule.')
+                                format('The activity does not overlap with anything.~n'),
+                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours)
                             ;
                                 format('Overlap detected. Skipping activity on ~w.~n', [Day])
                         )
@@ -75,7 +72,7 @@ schedule_activities :-
         (
             format('Updating fact activityHours(~w, ~w, ~w).~n', [TypeT, HoursT, ANameT]),
             retract(activityHours(TypeT, _, ANameT)),
-            HoursT \= 0 -> assertz(activityHours(TypeT, HoursT, ANameT))
+            \+ activityFull(TypeT, ANameT) -> assertz(activityHours(TypeT, HoursT, ANameT)) ; true
         )
     ),
     retract(activityHoursTemp(_,_,_)),
@@ -111,28 +108,21 @@ read_start_time_and_duration(Start, Duration) :-
 
 add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
     % add temporary fact - find if those exist, or find activityHours
-    write('Starting to add activity to schedule..~n'),
+    write('Starting to add activity to schedule.~n'),
     activityHoursTemp(Type, Hours, AName) ->
         (   
-            write('Starting condition.~n'),
             HoursLeft is Hours - DurationHours,
             HoursLeft >= 0 ->
                 (
-                    format('First condition, THe hours is positive.HoursLeft is ~w, the type is ~w, name is ~w', [HoursLeft, Type, AName]),
                     retract(activityHoursTemp(Type, Hours, AName)),
-                    format('after retract'),
                     assertz(activityHoursTemp(Type, HoursLeft, AName)),
-                    format('after assert'),
                     (
                         HoursLeft = 0 ->
-                        write('Inner condition ~n'),
                         assertz(activityFull(Type, AName))
                         ;
                         true
                     ),
-                    format('after inner condition'),
-                    assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime)),
-                    format('affter assert'), !
+                    assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime))
                 )
             ;
             format('Cannot schedule this activity as there is not enough allocated horus.'),
@@ -145,11 +135,9 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
             HoursLeft is Hours - DurationHours,
             HoursLeft >= 0 ->
                 (
-                    write('Second condition, THe hours is positive..~n'),
                     assertz(activityHoursTemp(Type, HoursLeft, AName)),
                     (
                         HoursLeft = 0 ->
-                        write('Inner condition ~n'),
                         assertz(activityFull(Type, AName))
                         ;
                         true
