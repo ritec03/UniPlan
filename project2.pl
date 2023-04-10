@@ -1,138 +1,19 @@
+:- module(main, [
+    overlaps_with_existing_activity/4,
+    print_overlapping_activities/4,
+    print_schedule/0
+]).
+
 :- use_module('time.pl').
-% :- use_module('course_schedule.pl').
+:- use_module('course_schedule.pl').
+:- use_module('activities.pl').
 
 % Define activity predicate with four arguments
 % course, week day, start time, end time
 :- dynamic activity/4.
-:- dynamic activityType/3.
 :- dynamic activityHoursTemp/3.
 :- dynamic activityFull/2.
 
-% TODO make sure to bring a message if a duplicate is found.
-% Predicate for storing user's course schedule
-store_course_schedule :-
-    write('Enter your course schedule for each day of the week.'), nl,
-    write('Example: [[cse101, monday, time(10,00), time(12,00)], [math201, tuesday, time(13,00), time(15,00)]].'), nl,
-    read(Schedule),
-    assert_course_schedule(Schedule),
-    nl,
-    write('Course schedule added successfully.'), nl.
-
-
-assert_course_schedule([]).
-assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
-    time(StartTime),
-    time(EndTime),
-    member(Day, [monday, tuesday, wednesday, thursday, friday, saturday, sunday]),
-    \+ overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
-    later(EndTime, StartTime),
-    assertz(activity(activityType(course, 0, Course), Day, StartTime, EndTime)),
-    assert_course_schedule(Rest).
-assert_course_schedule([[Course, Day, StartTime, EndTime]|Rest]) :-
-    overlaps_with_existing_activity(Course, Day, StartTime, EndTime),
-    format('Cannot add activity ~w on ~w from ~w to ~w as it overlaps with the following activities:~n', [Course, Day, StartTime, EndTime]),
-    print_overlapping_activities(Course, Day, StartTime, EndTime),
-    assert_course_schedule(Rest).
-assert_course_schedule([[_, _, _, _]|Rest]) :-
-    assert_course_schedule(Rest).
-
-% activityType(Type, Priority, Name)
-activityType(Type, Priority, Name) :-
-    member(Type, [course, sleep, homework, fitness, cooking]),
-    integer(Priority),
-    Priority >= 0,
-    Priority =< 5,
-    atom(Name),
-    assertz(activityType(Type, Priority, Name)).
-
-% activityHours(Type, Hours, Name)
-activityHours(Type, HoursPerWeek, Name) :-
-    member(Type, [course, sleep, homework, fitness, cooking]),
-    float(HoursPerWeek),
-    HoursPerWeek >= 0,
-    HoursPerWeek =< 20,
-    (Name == 0 ; atom(Name)),
-    assertz(activityHours(Type, HoursPerWeek, Name)).
-
-:- dynamic activityHours/3.
-
-% Predicate for storing user's activity hours
-store_activity_hours :-
-    write('Enter your weekly activity hours.'), nl,
-    write('Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]].'), nl,
-    read(ActivityHours),
-    assert_activity_hours(ActivityHours),
-    nl,
-    write('Activity hours added successfully.'), nl.
-
-% the predicate is going to assign weekly hours to specific activity types
-% for example, homework, fitness, cooking.
-% if hours are assigned to the same activity type, then the hours are
-% overwritten
-assert_activity_hours([]).
-assert_activity_hours([[Type, Hours]|Rest]) :-
-    member(Type, [homework, fitness, cooking]),
-    float(Hours),
-    Hours >= 0.0,
-    Hours =< 20.0,
-    % remove previously allocated hours if exist
-    (   activityHours(Type, _, _) ->
-        retract(activityHours(Type, _, _))
-    ;   true
-    ),
-    % add activity type if does not exist
-    (
-        (
-            \+ activityType(Type, _, 0),
-            assertz(activityType(Type, 0, 0))
-        );
-        true
-    ),
-    assertz(activityHours(Type, Hours, 0)),
-    assert_activity_hours(Rest).
-assert_activity_hours([_|Rest]) :-
-    format('Invalid activity type or hours provided. Please try again.~n'),
-    assert_activity_hours(Rest).
-
-% Prompt user to input named activity hours
-% Each activity is a list of [Type, Name, Hours]
-% Checks that hours allocated to named activities does not exceed hours allocated to type
-store_named_activity_hours :-
-    write('Enter named activity hours.'), nl,
-    write('Example: [[course, math, 5], [homework, "math hw1", 1.5]]'), nl,
-    read(Activities),
-    assert_named_activity_hours(Activities),
-    nl,
-    write('Named activity hours added successfully.'), nl.
-
-assert_named_activity_hours([]).
-assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
-    activityType(Type, _, _),
-    activityHours(Type, AllocatedHours, 0),
-    % check that named activity hours don't exceed hours allocaTted to type
-    named_activity_hours(Type, NamedHours),
-    TotalHours is NamedHours + Hours,
-    TotalHours =< AllocatedHours,
-    assertz(activityHours(Type, Hours, Name)),
-    assertz(activityType(Type, 0, Name)),
-    assert_named_activity_hours(Rest).
-assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
-    \+ activityType(Type, _, _),
-    format('Invalid activity type: ~w. Please try again.~n', [Type]),
-    assert_named_activity_hours(Rest).
-assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
-    activityType(Type, _, _),
-    activityHours(Type, AllocatedHours, 0),
-    named_activity_hours(Type, NamedHours),
-    TotalHours is NamedHours + Hours,
-    TotalHours > AllocatedHours,
-    format('Cannot add named activity ~w to ~w because it would exceed allocated hours.~n', [Name, Type]),
-    assert_named_activity_hours(Rest).
-
-% Retrieve the total number of hours for named activities of a specific type
-named_activity_hours(Type, TotalHours) :-
-    findall(Hours, (activityHours(Type, Hours, Name), Name \= 0), HoursList),
-    sum_list(HoursList, TotalHours).
 %% Schedule predicates
 
 % Here we want to go through all the activities, and schedule the allocated time.
@@ -153,7 +34,7 @@ named_activity_hours(Type, TotalHours) :-
 schedule_activities :-
     % go through all the activities
     forall(
-        (activityHours(Type, Hours, AName), AName \= 0 ),
+        (activityHours(Type, Hours, AName), AName \= 0, \+ activityFull(Type, AName)),
         (
             format('The activity is ~w, of type ~w.~n', [AName, Type]),
             % ask the user whether to schedule them or not
@@ -166,14 +47,18 @@ schedule_activities :-
                         format('Scheduling ~w for ~w`.~n', [AName, Day]),
                         % Read starting time and duration
                         read_start_time_and_duration(Start, Duration),
+                        write('Finished reading duration and start time.'),
                         minutes_to_hours(Duration, DurationHours),
                         add_duration_to_time(Start, DurationHours, EndTime),
+                        write('Finished calculating duration and times.'),
                         % Check for overlaps
                         (
                             \+ overlaps_with_existing_activity(AName, Day, Start, EndTime)
                             ->
                                 % Add activity to the schedule
-                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours)
+                                write('The activity does not overlap with anythin.'),
+                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours),
+                                write('After adding stuff to schedule.')
                             ;
                                 format('Overlap detected. Skipping activity on ~w.~n', [Day])
                         )
@@ -183,7 +68,18 @@ schedule_activities :-
                 format('Skipping activity.~n')
             )
         )
-    ).
+    ),
+    % now, remove the temporary facts and update allocated hours.
+    forall(
+        (activityHoursTemp(TypeT, HoursT, ANameT), ANameT \= 0),
+        (
+            format('Updating fact activityHours(~w, ~w, ~w).~n', [TypeT, HoursT, ANameT]),
+            retract(activityHours(TypeT, _, ANameT)),
+            HoursT \= 0 -> assertz(activityHours(TypeT, HoursT, ANameT))
+        )
+    ),
+    retract(activityHoursTemp(_,_,_)),
+    retract(activityFull(_,_)).
 
 read_schedule_activity(Schedule) :-
     write('Do you want to schedule this activity? (y/n) '),
@@ -214,18 +110,30 @@ read_start_time_and_duration(Start, Duration) :-
     read(Duration).
 
 add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
-    assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime)),
     % add temporary fact - find if those exist, or find activityHours
+    write('Starting to add activity to schedule..~n'),
     activityHoursTemp(Type, Hours, AName) ->
-        (
+        (   
+            write('Starting condition.~n'),
             HoursLeft is Hours - DurationHours,
             HoursLeft >= 0 ->
-            retract(activityHoursTemp(Type, Hours, AName)),
-            assertz(activityHoursTemp(Type, HoursLeft, AName)),
-            (
-                HoursLeft = 0 ->
-                assertz(activityFull(Type, AName))
-            )
+                (
+                    format('First condition, THe hours is positive.HoursLeft is ~w, the type is ~w, name is ~w', [HoursLeft, Type, AName]),
+                    retract(activityHoursTemp(Type, Hours, AName)),
+                    format('after retract'),
+                    assertz(activityHoursTemp(Type, HoursLeft, AName)),
+                    format('after assert'),
+                    (
+                        HoursLeft = 0 ->
+                        write('Inner condition ~n'),
+                        assertz(activityFull(Type, AName))
+                        ;
+                        true
+                    ),
+                    format('after inner condition'),
+                    assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime)),
+                    format('affter assert'), !
+                )
             ;
             format('Cannot schedule this activity as there is not enough allocated horus.'),
             % add temporary fact so that activity of this Name does not appear
@@ -236,11 +144,18 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
             activityHours(Type, Hours, AName),
             HoursLeft is Hours - DurationHours,
             HoursLeft >= 0 ->
-            assertz(activityHoursTemp(Type, HoursLeft, AName)),
-            (
-                HoursLeft = 0 ->
-                assertz(activityFull(Type, AName))
-            )
+                (
+                    write('Second condition, THe hours is positive..~n'),
+                    assertz(activityHoursTemp(Type, HoursLeft, AName)),
+                    (
+                        HoursLeft = 0 ->
+                        write('Inner condition ~n'),
+                        assertz(activityFull(Type, AName))
+                        ;
+                        true
+                    ),
+                    assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime)), !
+                )
             ;
             format('Cannot schedule this activity as there is not enough allocated horus.'),
             assertz(activityFull(Type, AName))
