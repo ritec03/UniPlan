@@ -90,7 +90,7 @@ assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     main:assertz(activityHours(Type, Hours, Name)),
     main:assertz(activityType(Type, 0, Name)),
     assert_named_activity_hours(Rest).
-assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
+assert_named_activity_hours([[Type, _Name, _Hours]|Rest]) :-
     \+ activityType(Type, _, _),
     format('Invalid activity type: ~w. Skipping the inpu "~w".~n', [Type, Type]),
     assert_named_activity_hours(Rest).

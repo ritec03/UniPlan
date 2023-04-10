@@ -1,5 +1,6 @@
 :- module(main, [
-    overlaps_with_exipsting_activity/4,
+    schedule_activities/0,
+    overlaps_with_existing_activity/4,
     print_overlapping_activities/4,
     activity/4
 ]).
@@ -36,7 +37,7 @@
 schedule_activities :-
     % go through all the activities
     forall(
-        (activityHours(Type, Hours, AName), AName \= 0, \+ activityFull(Type, AName)),
+        (activityHours(Type, _Hours, AName), AName \= 0, \+ activityFull(Type, AName)),
         (
             format('The activity is ~w, of type ~w.~n', [AName, Type]),
             % ask the user whether to schedule them or not
