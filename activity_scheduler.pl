@@ -54,6 +54,8 @@ schedule_activities :-
                         read_start_time_and_duration(Start, Duration),
                         add_minutes_to_time(Start, Duration, EndTime),
                         % TODO add a clause to prohibit crossing day
+                        duration(Start, time(23,59), TimeToMidnight),
+                        TimeToMidnight >= Duration ->
                         % Check for overlaps
                         (
                             \+ overlaps_with_existing_activity(AName, Day, Start, EndTime)
@@ -64,6 +66,9 @@ schedule_activities :-
                             ;
                                 format('Overlap detected. Skipping activity on ~w.~n', [Day])
                         )
+                        ;
+                        format('Scheduling activities that cross day boundary is currently not supported. 
+                                Skipping activity on ~w. ~n', [Day])
                     )
                 )
             ;
