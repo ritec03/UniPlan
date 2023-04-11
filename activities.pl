@@ -12,10 +12,10 @@
 
 % activityType(Type, Priority, Name)
 % Defines an activity type with a given priority and name, and stores it in the database
-% Only allows activity types 'course', 'sleep', 'homework', 'fitness', 'cooking'
+% Only allows activity types 'course', 'sleep', 'homework', 'fitness', 'cooking', 'read', 'socialize'
 % Priority must be an integer between 0 and 5, while name must be an atom
 activityType(Type, Priority, Name) :-
-    member(Type, [course, sleep, homework, fitness, cooking]),
+    member(Type, [course, sleep, homework, fitness, cooking, read, socialize]),
     integer(Priority),
     Priority >= 0,
     Priority =< 5,
@@ -25,11 +25,11 @@ activityType(Type, Priority, Name) :-
 % activityHours(Type, HoursPerWeek, Name)
 % Defines a clause with a given number of hours per week for
 % a given activity type with name, and stores it in the database
-% Only allows activity types 'course', 'sleep', 'homework', 'fitness', 'cooking'
-% HoursPerWeek must be a float between 0 and 20
+% Only allows activity types 'course', 'homework', 'fitness', 'cooking', 'read', 'socialize'
+% HoursPerWeek must be a float between 0 and 30
 % Name must be an atom or 0 if hours apply to all activities of this type
 activityHours(Type, HoursPerWeek, Name) :-
-    member(Type, [course, sleep, homework, fitness, cooking]),
+    member(Type, [course, sleep, homework, fitness, cooking, read, socialize]),
     float(HoursPerWeek),
     HoursPerWeek >= 0,
     HoursPerWeek =< 20,
@@ -43,8 +43,8 @@ activityHours(Type, HoursPerWeek, Name) :-
 % The input must be a list of [activityType, hours]
 % Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]]
 store_activity_hours :-
-    write('Enter your weekly activity hours. Allowed activities are: homework, fitness and cooking.'), nl,
-    write('Example: [[homework, 7.0], [fitness, 3.0], [cooking, 1.5]].'), nl,
+    write('Enter your weekly activity hours. Allowed activities are: homework, fitness, cooking, read, socialize'), nl,
+    write('Example: [[homework, 7.0], [fitness, 3.0], [cooking, 1.5], [read, 2.8], [socialize, 4.5]].'), nl,
     read(ActivityHours),
     assert_activity_hours(ActivityHours),
     nl,
@@ -57,10 +57,10 @@ store_activity_hours :-
 % overwritten
 assert_activity_hours([]).
 assert_activity_hours([[Type, Hours]|Rest]) :-
-    member(Type, [homework, fitness, cooking]),
+    member(Type, [homework, fitness, cooking, read, socialize]),
     float(Hours),
     Hours >= 0.0,
-    Hours =< 20.0,
+    Hours =< 30.0,
     % remove previously allocated hours if exist
     (   activityHours(Type, _, _) ->
         main:retract(activityHours(Type, _, _))
@@ -78,13 +78,13 @@ assert_activity_hours([[Type, Hours]|Rest]) :-
     assert_activity_hours(Rest).
 assert_activity_hours([[Type, Hours]|Rest]) :-
     float(Hours),
-    (Hours < 0.0; Hours > 20.0),
-    \+ member(Type, [homework, fitness, cooking]),
+    (Hours < 0.0; Hours > 30.0),
+    \+ member(Type, [homework, fitness, cooking, read, socialize]),
     format('Invalid activity type and hours provided: ~w, ~w. Please try again.~n', [Type, Hours]),
     assert_activity_hours(Rest).
 assert_activity_hours([[_, Hours]|Rest]) :-
     float(Hours),
-    (Hours < 0.0; Hours > 20.0),
+    (Hours < 0.0; Hours > 30.0),
     format('Invalid activity hours provided: ~w. Please try again.~n', [Hours]),
     assert_activity_hours(Rest).
 assert_activity_hours([[Type, _]|Rest]) :-

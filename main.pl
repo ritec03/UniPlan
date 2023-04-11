@@ -30,11 +30,11 @@ main :-
     read(Input),
     (
         Input =:= 0 -> format('Closing...~n'), halt;
-        Input =:= 1 -> store_course_schedule, main;
-        Input =:= 2 -> store_sleep_schedule, main;
-        Input =:= 3 -> store_activity_hours, main;
-        Input =:= 4 -> store_named_activity_hours, main;
-        Input =:= 5 -> schedule_activities, main;
+        Input =:= 1 -> store_course_schedule;
+        Input =:= 2 -> store_sleep_schedule;
+        Input =:= 3 -> store_activity_hours;
+        Input =:= 4 -> store_named_activity_hours;
+        Input =:= 5 -> schedule_activities;
         Input =:= 6 ->  (
             get_time(T),
             format_time(atom(Time), '%Y-%m-%d %H:%M:%S', T),
