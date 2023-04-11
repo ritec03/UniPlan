@@ -3,7 +3,7 @@
 ]).
 
 :- use_module('time.pl').
-:- use_module('project2.pl').
+:- use_module('activity_scheduler.pl').
 
 % This module provides the functionality to schedule the user's sleep.
 % THe user is prompted to provide the desired hours of sleep and the start

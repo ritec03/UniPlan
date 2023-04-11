@@ -1,7 +1,7 @@
 :- module(print_schedule, [
     print_schedule/0
 ]).
-:- use_module('project2.pl').
+:- use_module('activity_scheduler.pl').
 :- use_module('time.pl').
 
 % This module provides predicate to print the user's schedule

@@ -2,7 +2,7 @@
     store_course_schedule/0
 ]).
 :- use_module('time.pl').
-:- use_module('project2.pl').
+:- use_module('activity_scheduler.pl').
 
 % This module defines the predicate store_course_schedule/0,
 % which prompts the user to input their course schedule for

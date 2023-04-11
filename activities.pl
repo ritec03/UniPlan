@@ -6,7 +6,7 @@
 ]).
 
 :- use_module('time.pl').
-:- use_module('project2.pl').
+:- use_module('activity_scheduler.pl').
 
 :- dynamic activityType/3.
 
