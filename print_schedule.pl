@@ -4,6 +4,9 @@
 :- use_module('project2.pl').
 :- use_module('time.pl').
 
+% This module provides predicate to print the user's schedule
+% stored in the database.
+
 % print schedule
 print_schedule :-
     Days = [monday, tuesday, wednesday, thursday, friday, saturday, sunday],

@@ -16,18 +16,20 @@
 :- dynamic activityHoursTemp/3.
 :- dynamic activityFull/2.
 
+% This module provides predicates for scheduling the allocated activities
+% according to their activity hours.
+
 %% Schedule predicates
 
 % Here we want to go through all the activities, and schedule the allocated time.
 % we only allocate activities that are named (their name is not 0).
 % for each activity, one can schedule them or skip
-% to schedule each activity, ask what days of the week to allocate them to
-% TODO
+% to schedule each activity, we ask what days of the week to allocate them to
 % then ask the starting time and activity duration.
 % then if total weekly scheduled time exceeds the allocated time
-% or if overlaps with existing activities are detected, reject
-% if success, subtract time from the activity
-% in the end, provide the schedule and the leftover times for activities.
+% or if overlaps with existing activities are detected, we reject
+% if success, subtract time from the activity in the end,
+% add to the schedule and compute the leftover times for activities.
 
 % Now, when we allocate an activity, we want add temporary fact of the leftover time for this activity
 % if the value of time gets below 0, then give an error of not sufficient allocated time.
@@ -36,7 +38,7 @@
 schedule_activities :-
     % go through all the activities
     forall(
-        (activityHours(Type, Hours, AName), AName \= 0, \+ activityFull(Type, AName)),
+        (activityHours(Type, _, AName), AName \= 0, \+ activityFull(Type, AName)),
         (
             format('The activity is ~w, of type ~w.~n', [AName, Type]),
             % ask the user whether to schedule them or not
@@ -46,7 +48,7 @@ schedule_activities :-
                 format('Scheduling activity for days: ~w.~n', [Schedule]),
                 forall((member(Day, Schedule), \+ activityFull(Type, AName)),
                     (
-                        format('Scheduling ~w for ~w`.~n', [AName, Day]),
+                        format('~n~nScheduling ~w for ~w`.~n', [AName, Day]),
                         % Read starting time and duration
                         read_start_time_and_duration(Start, Duration),
                         add_minutes_to_time(Start, Duration, EndTime),
@@ -69,16 +71,21 @@ schedule_activities :-
         )
     ),
     % now, remove the temporary facts and update allocated hours.
-    forall(
-        (activityHoursTemp(TypeT, HoursT, ANameT), ANameT \= 0),
-        (
-            format('Updating fact activityHours(~w, ~w, ~w).~n', [TypeT, HoursT, ANameT]),
-            retract(activityHours(TypeT, _, ANameT)),
-            \+ activityFull(TypeT, ANameT) -> assertz(activityHours(TypeT, HoursT, ANameT)) ; true
-        )
-    ),
-    retract(activityHoursTemp(_,_,_)),
-    retract(activityFull(_,_)).
+    activityHoursTemp(TypeT, HoursT, ANameT) ->
+    (
+        forall(
+            (activityHoursTemp(TypeT, HoursT, ANameT), ANameT \= 0),
+            (
+                format('Updating activityHours(~w, ~w, ~w).~n', [TypeT, HoursT, ANameT]),
+                retract(activityHours(TypeT, _, ANameT)),
+                \+ activityFull(TypeT, ANameT) -> assertz(activityHours(TypeT, HoursT, ANameT)) ; true
+            )
+        ),
+        retract(activityHoursTemp(_,_,_)),
+        retract(activityFull(_,_))
+    )
+    ;
+    true.
 
 read_schedule_activity(Schedule) :-
     write('Do you want to schedule this activity? (y/n) '),
@@ -103,14 +110,14 @@ read_schedule_activity(Schedule) :-
 
 % gets Start as time(H,M) and Duration in minutes for the activity
 read_start_time_and_duration(Start, Duration) :-
-    write('Enter the starting time (HH:MM): '),
+    write('Enter the starting time: time(HH, MM).: '),
     read(Start),
     write('Enter the duration (in minutes): '),
     read(Duration).
 
 add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationMinutes) :-
     % add temporary fact - find if those exist, or find activityHours
-    format('Starting to add activity to schedule.~n'),
+    format('Adding the activity to schedule.~n'),
     activityHoursTemp(Type, Hours, AName) ->
         (   
             MinutesLeft is (Hours * 60) - DurationMinutes,
@@ -128,7 +135,7 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationMinutes) :-
                     assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime))
                 )
             ;
-            format('Cannot schedule this activity as there is not enough allocated horus.'),
+            format('Cannot schedule this activity as there is not enough allocated hours.~n'),
             % add temporary fact so that activity of this Name does not appear
             assertz(activityFull(Type, AName))
         )
@@ -149,7 +156,7 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationMinutes) :-
                     assertz(activity(activityType(Type, 0, AName), Day, Start, EndTime)), !
                 )
             ;
-            format('Cannot schedule this activity as there is not enough allocated horus.'),
+            format('Cannot schedule this activity as there is not enough allocated hours.~n'),
             assertz(activityFull(Type, AName))
         ).
     

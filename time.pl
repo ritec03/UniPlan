@@ -13,6 +13,9 @@
     next_day/2
 ]).
 
+% This module contains basic predicates required to handle time and duration
+% in this program.
+
 % Define time predicate with two arguments
 % hour, minute
 time(Hour, Minute) :-

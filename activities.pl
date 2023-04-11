@@ -11,6 +11,9 @@
 :- dynamic activityType/3.
 
 % activityType(Type, Priority, Name)
+% Defines an activity type with a given priority and name, and stores it in the database
+% Only allows activity types 'course', 'sleep', 'homework', 'fitness', 'cooking'
+% Priority must be an integer between 0 and 5, while name must be an atom
 activityType(Type, Priority, Name) :-
     member(Type, [course, sleep, homework, fitness, cooking]),
     integer(Priority),
@@ -19,7 +22,12 @@ activityType(Type, Priority, Name) :-
     atom(Name),
     main:assertz(activityType(Type, Priority, Name)).
 
-% activityHours(Type, Hours, Name)
+% activityHours(Type, HoursPerWeek, Name)
+% Defines a clause with a given number of hours per week for
+% a given activity type with name, and stores it in the database
+% Only allows activity types 'course', 'sleep', 'homework', 'fitness', 'cooking'
+% HoursPerWeek must be a float between 0 and 20
+% Name must be an atom or 0 if hours apply to all activities of this type
 activityHours(Type, HoursPerWeek, Name) :-
     member(Type, [course, sleep, homework, fitness, cooking]),
     float(HoursPerWeek),
@@ -30,7 +38,10 @@ activityHours(Type, HoursPerWeek, Name) :-
 
 :- dynamic activityHours/3.
 
-% Predicate for storing user's activity hours
+% Predicate for storing user's weekly activity hours
+% Prompt the user to enter activity hours
+% The input must be a list of [activityType, hours]
+% Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]]
 store_activity_hours :-
     write('Enter your weekly activity hours.'), nl,
     write('Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]].'), nl,
@@ -39,8 +50,9 @@ store_activity_hours :-
     nl,
     write('Activity hours added successfully.'), nl.
 
-% the predicate is going to assign weekly hours to specific activity types
-% for example, homework, fitness, cooking.
+% Prompt the user to enter named activity hours
+% The input must be a list of [activityType, name, hours]
+% Example: [[course, math, 5], [homework, "math hw1", 1.5]]
 % if hours are assigned to the same activity type, then the hours are
 % overwritten
 assert_activity_hours([]).
@@ -68,7 +80,9 @@ assert_activity_hours([_|Rest]) :-
     format('Invalid activity type or hours provided. Please try again.~n'),
     assert_activity_hours(Rest).
 
-% Prompt user to input named activity hours
+% Prompt user to input named activity hours - those activities which are not
+% types of activities, like fitness, but specific activities within a type,
+% like gym, swimming for fitness, or cs homework for homework.
 % Each activity is a list of [Type, Name, Hours]
 % Checks that hours allocated to named activities does not exceed hours allocated to type
 store_named_activity_hours :-
@@ -90,7 +104,7 @@ assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     main:assertz(activityHours(Type, Hours, Name)),
     main:assertz(activityType(Type, 0, Name)),
     assert_named_activity_hours(Rest).
-assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
+assert_named_activity_hours([[Type, _, _]|Rest]) :-
     \+ activityType(Type, _, _),
     format('Invalid activity type: ~w. Skipping the inpu "~w".~n', [Type, Type]),
     assert_named_activity_hours(Rest).

@@ -5,6 +5,10 @@
 :- use_module('time.pl').
 :- use_module('project2.pl').
 
+% This module provides the functionality to schedule the user's sleep.
+% THe user is prompted to provide the desired hours of sleep and the start
+% of sleep and then schedules the sleep according to the user's input.
+
 % add predicate to prohibit establishing sleep schedule the second time
 store_sleep_schedule :-
     main:activity(activityType(sleep, _, _), _, _, _),
@@ -17,17 +21,17 @@ store_sleep_schedule :-
     read(Bedtime),
     schedule_sleep(AllocatedHours, Bedtime),
     nl,
-    write('Course schedule added successfully.'), nl.
+    write('Sleep schedule added successfully.'), nl.
 
 % Predicate to schedule sleep
 % schedule sleep based on allocated hours and bedtime
 % Schedule the sleep activity based on allocated hours and bedtime
-% TODO request bedtime - should be between 8 and 3 am
-% TODO request sleep duraiton - should be between 4 and 10.
+% This predicates schedules sleep within a single day or two
+% consecutive days depending if the sleep crosses the day border
 
-schedule_sleep(AllocatedHours, Bedtime) :-
+schedule_sleep(AllocatedHours, _) :-
     AllocatedHours > 12 -> 
-    format('Maximum allocated time for sleep is 12 h. Please, try again.').
+    format('Maximum allocated time for sleep is 12 h. Aborting').
 
 schedule_sleep(AllocatedHours, Bedtime) :-
     % if the bedtime is after midnight, just schedule sleep
@@ -56,7 +60,7 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     ).
 
 schedule_sleep(AllocatedHours, Bedtime) :-
-    % if the bedtime is before midnight but the sleep fits, assign it
+    % if the bedtime is before midnight but the sleep does not fit, split it
     (earlier(Bedtime, time(23,59)); sameTime(Bedtime, time(23,59))),
     (later(Bedtime, time(20,00)); sameTime(Bedtime, time(20,00))),
     % calculate amount of sleep before midnight
@@ -64,7 +68,7 @@ schedule_sleep(AllocatedHours, Bedtime) :-
     % if the duration is less, assign sleep
     Duration =< AllocatedHours * 60,
     hours_to_minutes(AllocatedHours, AllocatedMinutes),
-    LeftoverMinutes is (AllocatedMinutes - Duration),
+    LeftoverMinutes is (AllocatedMinutes - Duration) - 1,
     add_minutes_to_time(time(0,0), LeftoverMinutes, Endtime),
     foreach(
         (day(Day), next_day(Day, NextDay)),

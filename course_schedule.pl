@@ -4,8 +4,14 @@
 :- use_module('time.pl').
 :- use_module('project2.pl').
 
+% This module defines the predicate store_course_schedule/0,
+% which prompts the user to input their course schedule for
+% each day of the week and then stores the schedule in the database.
+% The schedule input should be a list of lists, where each sub-list
+% contains the name of the course, the day of the week, start time and
+% end time of the activity.
 
-% TODO make sure to bring a message if a duplicate is found.
+
 % Predicate for storing user's course schedule
 store_course_schedule :-
     write('Enter your course schedule for each day of the week.'), nl,
