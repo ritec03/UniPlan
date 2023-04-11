@@ -5,25 +5,42 @@
 :- use_module('activity_scheduler.pl').
 :- use_module('print_schedule.pl').
 
+% welcome screen predicate
+welcome :-
+    nl,nl,nl,
+    write('Welcome to the course, sleep and activity scheduler!'),
+    nl,
+    main.
+
 % Define the main predicate
 main :-
-    format('~n~n~nWelcome to the course, sleep and activity scheduler!'),
-    writeln('Please select an option:'),
-    writeln('1. Add course schedule'),
-    writeln('2. Add sleep schedule'),
-    writeln('3. Allocate time for activity types'),
-    writeln('4. Allocate time for specific activities'),
-    writeln('5. Schedule activities'),
-    writeln('6. Print schedule'),
-    writeln('0. Quit'),
+    nl,
+    writeln('Please select an option (end with a dot \'.\')'),
+    nl,
+    write(' Cmd |  {command description}')                      ,nl,
+    write('-----+------------------------------------------')   ,nl,
+    write('  0  |  Quit')                                       ,nl,
+    write('  1  |  Add course schedule')                        ,nl,
+    write('  2  |  Add sleep schedule')                         ,nl,
+    write('  3  |  Allocate time for activity types')           ,nl,
+    write('  4  |  Allocate time for specific activities')      ,nl,
+    write('  5  |  Schedule activities')                        ,nl,
+    write('  6  |  Print schedule')                             ,nl,
+    nl,
     read(Input),
     (
+        Input =:= 0 -> format('Closing...~n'), halt;
         Input =:= 1 -> store_course_schedule, main;
         Input =:= 2 -> store_sleep_schedule, main;
         Input =:= 3 -> store_activity_hours, main;
         Input =:= 4 -> store_named_activity_hours, main;
         Input =:= 5 -> schedule_activities, main;
-        Input =:= 6 -> print_schedule, main;
-        Input =:= 0 -> format('Goodbye!');
-        writeln('Invalid input, please try again.'), main
-    ).
+        Input =:= 6 ->  (
+            get_time(T),
+            format_time(atom(Time), '%Y-%m-%d %H:%M:%S', T),
+            format('\n\tThis is the current schedule, generated on ~w\n', [Time]),
+            print_schedule
+        );
+        writeln('Invalid input, please try again.')
+    ),
+    main.
