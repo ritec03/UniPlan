@@ -21,8 +21,7 @@ print_schedule_by_day([Day|Rest]) :-
 
 print_activities_for_day(Day) :-
     main:activity(activityType(_, _, Course), Day, StartTime, EndTime),
-    duration(StartTime, EndTime, Duration),
-    format('\t~w from ~w to ~w (~d minutes)~n', [Course, StartTime, EndTime, Duration]),
+    format('\t~w from ~w to ~w ~n', [Course, StartTime, EndTime]),
     fail.
 print_activities_for_day(_).
 
