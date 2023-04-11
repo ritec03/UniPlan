@@ -57,7 +57,7 @@ schedule_activities :-
                             ->
                                 % Add activity to the schedule
                                 format('The activity does not overlap with anything.~n'),
-                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours)
+                                add_activity_to_schedule(Type, AName, Day, Start, EndTime, Duration)
                             ;
                                 format('Overlap detected. Skipping activity on ~w.~n', [Day])
                         )
@@ -108,18 +108,19 @@ read_start_time_and_duration(Start, Duration) :-
     write('Enter the duration (in minutes): '),
     read(Duration).
 
-add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
+add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationMinutes) :-
     % add temporary fact - find if those exist, or find activityHours
-    write('Starting to add activity to schedule.~n'),
+    format('Starting to add activity to schedule.~n'),
     activityHoursTemp(Type, Hours, AName) ->
         (   
-            HoursLeft is Hours - DurationHours,
-            HoursLeft >= 0 ->
+            MinutesLeft is (Hours * 60) - DurationMinutes,
+            MinutesLeft >= 0 ->
                 (
                     retract(activityHoursTemp(Type, Hours, AName)),
+                    minutes_to_hours(MinutesLeft, HoursLeft),
                     assertz(activityHoursTemp(Type, HoursLeft, AName)),
                     (
-                        HoursLeft =< 0.01 ->
+                        MinutesLeft =< 1 ->
                         assertz(activityFull(Type, AName))
                         ;
                         true
@@ -134,12 +135,13 @@ add_activity_to_schedule(Type, AName, Day, Start, EndTime, DurationHours) :-
         ;
         (
             activityHours(Type, Hours, AName),
-            HoursLeft is Hours - DurationHours,
-            HoursLeft >= 0 ->
+            MinutesLeft is (Hours * 60) - DurationMinutes,
+            MinutesLeft >= 0 ->
                 (
+                    minutes_to_hours(MinutesLeft, HoursLeft),
                     assertz(activityHoursTemp(Type, HoursLeft, AName)),
                     (
-                        HoursLeft =< 0.01 ->
+                        MinutesLeft =< 1 ->
                         assertz(activityFull(Type, AName))
                         ;
                         true
