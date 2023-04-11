@@ -43,12 +43,23 @@ process_input(User_input) :-
                 User_input = "exit" -> write('Exiting...\n'), halt;
                 User_input = "help" -> help;
                 
-                User_input = "studies" -> store_course_schedule;
-                User_input = "sleep" -> store_sleep_schedule;
-                User_input = "activity" -> store_activity_hours;
-                User_input = "custom" -> store_named_activity_hours;
-                User_input = "schedule" -> schedule_activities;
-                User_input = "print" -> print_schedule;
+                User_input = "studies" -> course_schedule:store_course_schedule
+                ;
+                User_input = "sleep" -> sleep_schedule:store_sleep_schedule
+                ;
+                User_input = "activity" -> activities:store_activity_hours
+                ;
+                User_input = "custom" -> activities:store_named_activity_hours
+                ;
+                User_input = "schedule" -> main:schedule_activities
+                ;
+                User_input = "print" -> (
+                    get_time(T),
+                    format_time(atom(Time), '%Y-%m-%d %H:%M:%S', T),
+                    format('\n\tThis is the current schedule, generated on ~w\n', [Time]),
+                    print_schedule:print_schedule
+                );
+
                 write('Unknown command. Please try again.\n')
             ),
             start_loop;
