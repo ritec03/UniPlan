@@ -98,7 +98,7 @@ assert_activity_hours([[Type, _]|Rest]) :-
 % Checks that hours allocated to named activities does not exceed hours allocated to type
 store_named_activity_hours :-
     write('Enter named activity hours.'), nl,
-    write('Example: [[course, math, 5], [homework, "math hw1", 1.5]]'), nl,
+    write('Example: [[course, math, 5], [homework, "math hw1", 1.5]].'), nl,
     read(Activities),
     assert_named_activity_hours(Activities),
     nl,
@@ -108,7 +108,7 @@ assert_named_activity_hours([]).
 assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     activityType(Type, _, _),
     activityHours(Type, AllocatedHours, 0),
-    % check that named activity hours don't exceed hours allocaTted to type
+    % check that named activity hours don't exceed hours allocated to type
     named_activity_hours(Type, NamedHours),
     TotalHours is NamedHours + Hours,
     TotalHours =< AllocatedHours,
@@ -117,7 +117,7 @@ assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     assert_named_activity_hours(Rest).
 assert_named_activity_hours([[Type, _, _]|Rest]) :-
     \+ activityType(Type, _, _),
-    format('Invalid activity type: ~w. Skipping the inpu "~w".~n', [Type, Type]),
+    format('Invalid activity type: ~w. Skipping the input "~w".~n', [Type, Type]),
     assert_named_activity_hours(Rest).
 assert_named_activity_hours([[Type, Name, Hours]|Rest]) :-
     activityType(Type, _, _),
