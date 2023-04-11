@@ -43,8 +43,8 @@ activityHours(Type, HoursPerWeek, Name) :-
 % The input must be a list of [activityType, hours]
 % Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]]
 store_activity_hours :-
-    write('Enter your weekly activity hours.'), nl,
-    write('Example: [[course, 14.5], [sleep, 56.0], [homework, 7.0], [fitness, 3.0], [cooking, 1.5]].'), nl,
+    write('Enter your weekly activity hours. Allowed activities are: homework, fitness and cooking.'), nl,
+    write('Example: [[homework, 7.0], [fitness, 3.0], [cooking, 1.5]].'), nl,
     read(ActivityHours),
     assert_activity_hours(ActivityHours),
     nl,
@@ -76,8 +76,19 @@ assert_activity_hours([[Type, Hours]|Rest]) :-
     ),
     main:assertz(activityHours(Type, Hours, 0)),
     assert_activity_hours(Rest).
-assert_activity_hours([_|Rest]) :-
-    format('Invalid activity type or hours provided. Please try again.~n'),
+assert_activity_hours([[Type, Hours]|Rest]) :-
+    float(Hours),
+    (Hours < 0.0; Hours > 20.0),
+    \+ member(Type, [homework, fitness, cooking]),
+    format('Invalid activity type and hours provided: ~w, ~w. Please try again.~n', [Type, Hours]),
+    assert_activity_hours(Rest).
+assert_activity_hours([[_, Hours]|Rest]) :-
+    float(Hours),
+    (Hours < 0.0; Hours > 20.0),
+    format('Invalid activity hours provided: ~w. Please try again.~n', [Hours]),
+    assert_activity_hours(Rest).
+assert_activity_hours([[Type, _]|Rest]) :-
+    format('Invalid activity type provided: ~w. Please try again.~n', [Type]),
     assert_activity_hours(Rest).
 
 % Prompt user to input named activity hours - those activities which are not

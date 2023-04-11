@@ -1,7 +1,8 @@
 :- module(main, [
     overlaps_with_existing_activity/4,
     print_overlapping_activities/4,
-    activity/4
+    activity/4,
+    schedule_activities/0
 ]).
 
 :- use_module('time.pl').
