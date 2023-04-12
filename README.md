@@ -18,6 +18,8 @@ Start the program by typing 'main.' in the SWI-Prolog interpreter after consulti
 
 Follow the prompts to enter your weekly activity hours, course schedule, and sleep schedule, then print the schedule in the interactive menu.
 
+View a mock example of how creating a schedule works [here](https://docs.google.com/document/d/1hDUT8BO9lqEi9Iw0MJdScCAYDvkaVpXNfmxn3yjEM1k/edit?usp=sharing). View the google sheets [schedule](https://docs.google.com/spreadsheets/d/1wLUKylAaOnyRwICBiOVqotFNNKcS5MhxPGW6Q-tdP9A/edit?usp=sharing) that is made in the example.
+
 ## Functionality of the Program:
 UniPlan has four main modules: activity_scheduler.pl, activities.pl, course_schedule.pl, and sleep_schedule.pl. 
 
