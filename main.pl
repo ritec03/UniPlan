@@ -5,17 +5,6 @@
 :- use_module('activity_scheduler.pl').
 :- use_module('print_schedule.pl').
 
-% reads user input, converts it to string, then tries to convert the input
-% as a number, and if it fails, leaves the input as a string.
-read_input(Input) :-
-    read_line_to_codes(user_input, Codes),
-    string_to_atom(Codes, Atom),
-    (
-        catch(number_chars(Input, Codes), _, fail) -> true ;
-        Atom = Input
-    ).
-
-
 % welcome screen predicate
 welcome :-
     nl,nl,nl,
@@ -38,7 +27,7 @@ main :-
     write('  5  |  Schedule activities')                        ,nl,
     write('  6  |  Print schedule')                             ,nl,
     nl,
-    read_input(Input),
+    read(Input),
     (
         Input == 0 -> format('Closing...~n'), halt;
         Input == 1 -> store_course_schedule, main;

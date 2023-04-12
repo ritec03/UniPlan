@@ -2,7 +2,8 @@
     overlaps_with_existing_activity/4,
     print_overlapping_activities/4,
     activity/4,
-    schedule_activities/0
+    schedule_activities/0,
+    add_activity_to_schedule/6
 ]).
 
 :- use_module('time.pl').
@@ -41,6 +42,7 @@ schedule_activities :-
     forall(
         (activityHours(Type, _, AName), AName \= 0, \+ activityFull(Type, AName)),
         (
+            format('~n------------------------------------~n'),
             format('The activity is ~w, of type ~w.~n', [AName, Type]),
             % ask the user whether to schedule them or not
             read_schedule_activity(Schedule),
@@ -48,8 +50,9 @@ schedule_activities :-
             ->
                 format('Scheduling activity for days: ~w.~n', [Schedule]),
                 forall((member(Day, Schedule), \+ activityFull(Type, AName)),
-                    (
-                        format('~n~nScheduling ~w for ~w`.~n', [AName, Day]),
+                    (   
+                        dayName(Day, DayName),
+                        format('~nScheduling ~w for ~w.~n', [AName, DayName]),
                         % Read starting time and duration
                         read_start_time_and_duration(Start, Duration),
                         add_minutes_to_time(Start, Duration, EndTime),

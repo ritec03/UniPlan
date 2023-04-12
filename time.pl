@@ -10,6 +10,7 @@
     hours_to_minutes/2,
     minutes_to_hours/2,
     day/1,
+    dayName/2,
     next_day/2
 ]).
 
@@ -69,6 +70,14 @@ day(thursday).
 day(friday).
 day(saturday).
 day(sunday).
+
+dayName(monday, "Monday").
+dayName(tuesday, "Tuesday").
+dayName(wednesday, "Wednesday").
+dayName(thursday, "Thursday").
+dayName(friday, "Friday").
+dayName(saturday, "Saturday").
+dayName(sunday, "Sunday").
 
 % Define predicate for next day
 next_day(monday, tuesday).
